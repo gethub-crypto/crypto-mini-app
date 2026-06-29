@@ -1,6 +1,4 @@
-// В реальном приложении - база данных
-// Сейчас заглушка с localStorage API Vercel
-const users = new Map();
+const firebase = require('./firebase');
 
 module.exports = async (req, res) => {
   try {
@@ -10,14 +8,17 @@ module.exports = async (req, res) => {
       return res.json({ premium: false });
     }
     
-    // Заглушка - все четные ID получают премиум
-    const isPremium = parseInt(userId) % 2 === 0;
+    // Получаем данные из Firebase
+    const userData = await firebase.get(`users/${userId}`);
+    
+    const isPremium = userData?.premium || false;
     
     res.json({ 
       premium: isPremium,
       features: isPremium ? ['all_coins', 'analytics', 'alerts'] : ['free_coins']
     });
   } catch (error) {
+    console.error('Error:', error);
     res.json({ premium: false });
   }
 };
