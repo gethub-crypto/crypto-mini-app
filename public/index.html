@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Tracker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #0a0a1a);
+            color: var(--tg-theme-text-color, #ffffff);
+            padding: 16px;
+            min-height: 100vh;
+        }
+        
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 24px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #F7931A, #FF6B6B, #E84393);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .premium-badge {
+            background: linear-gradient(135deg, #F7931A, #E84393);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .free-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+            padding: 4px;
+            border-radius: 14px;
+        }
+        
+        .nav-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            opacity: 0.7;
+        }
+        
+        .nav-btn.active {
+            background: linear-gradient(135deg, #F7931A, #E84393);
+            opacity: 1;
+            font-weight: 600;
+        }
+        
+        .tab {
+            display: none;
+        }
+        
+        .tab.active {
+            display: block;
+        }
+        
+        .crypto-grid {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .crypto-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 16px;
+            transition: transform 0.2s;
+        }
+        
+        .crypto-card:active {
+            transform: scale(0.98);
+        }
+        
+        .crypto-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .crypto-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .crypto-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .crypto-symbol {
+            font-size: 14px;
+            opacity: 0.6;
+            margin-left: 6px;
+        }
+        
+        .crypto-price {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .crypto-change {
+            display: flex;
+            gap: 12px;
+            font-size: 14px;
+        }
+        
+        .change-up {
+            color: #00C853;
+        }
+        
+        .change-down {
+            color: #FF5252;
+        }
+        
+        .premium-lock {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            border: 2px dashed rgba(255,255,255,0.1);
+        }
+        
+        .lock-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .buy-btn {
+            background: linear-gradient(135deg, #F7931A, #E84393);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: transform 0.2s;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .buy-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        
+        .refresh-btn:active {
+            transform: rotate(180deg) scale(0.9);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            opacity: 0.6;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid #F7931A;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="logo">🚀</div>
+            <h1>Crypto Tracker</h1>
+        </div>
+        
+        <div class="status-bar">
+            <span>👤 ID: <span id="userId">...</span></span>
+            <span id="premiumBadge" class="free-badge">FREE</span>
+        </div>
+        
+        <div class="nav">
+            <button class="nav-btn active" onclick="switchTab('free')">📊 Бесплатные</button>
+            <button class="nav-btn" onclick="switchTab('premium')">⭐ Премиум</button>
+        </div>
+        
+        <div id="freeTab" class="tab active">
+            <div id="freeCoins" class="crypto-grid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Загрузка курсов...
+                </div>
+            </div>
+        </div>
+        
+        <div id="premiumTab" class="tab">
+            <div id="premiumContent"></div>
+        </div>
+        
+        <button class="refresh-btn" onclick="refreshData()">🔄</button>
+    </div>
+    
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        const userId = tg.initDataUnsafe?.user?.id || 'guest';
+        let isPremium = false;
+        
+        // Монеты
+        const freeCoins = [
+            { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', emoji: '₿' },
+            { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', emoji: 'Ξ' },
+            { id: 'binancecoin', name: 'BNB', symbol: 'BNB', emoji: '🟡' }
+        ];
+        
+        // Инициализация
+        document.getElementById('userId').textContent = userId;
+        checkPremium();
+        loadFreeCoins();
+        
+        async function checkPremium() {
+            try {
+                const response = await fetch(`/api/check-premium?userId=${userId}`);
+                const data = await response.json();
+                isPremium = data.premium;
+                
+                const badge = document.getElementById('premiumBadge');
+                if (isPremium) {
+                    badge.textContent = '⭐ PREMIUM';
+                    badge.className = 'premium-badge';
+                }
+            } catch (error) {
+                console.log('Free mode');
+            }
+        }
+        
+        async function loadFreeCoins() {
+            const container = document.getElementById('freeCoins');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка...</div>';
+            
+            try {
+                const response = await fetch('/api/crypto?type=free');
+                const result = await response.json();
+                
+                if (result.success) {
+                    let html = '';
+                    for (const coin of freeCoins) {
+                        const data = result.data[coin.id];
+                        if (data) {
+                            const change = data.usd_24h_change || 0;
+                            const changeClass = change >= 0 ? 'change-up' : 'change-down';
+                            const arrow = change >= 0 ? '📈' : '📉';
+                            
+                            html += `
+                                <div class="crypto-card">
+                                    <div class="crypto-header">
+                                        <div>
+                                            <span class="crypto-name">${coin.emoji} ${coin.name}</span>
+                                            <span class="crypto-symbol">${coin.symbol}</span>
+                                        </div>
+                                    </div>
+                                    <div class="crypto-price">$${data.usd.toLocaleString('en', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                                    <div class="crypto-change">
+                                        <span class="${changeClass}">${arrow} ${change.toFixed(2)}%</span>
+                                        <span style="opacity:0.6">24ч</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="loading">❌ Ошибка загрузки</div>';
+                }
+            } catch (error) {
+                container.innerHTML = '<div class="loading">❌ Ошибка соединения</div>';
+            }
+        }
+        
+        async function loadPremiumCoins() {
+            const container = document.getElementById('premiumContent');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка премиум данных...</div>';
+            
+            try {
+                const response = await fetch('/api/crypto?type=premium');
+                const result = await response.json();
+                
+                if (result.success) {
+                    let html = '<div class="crypto-grid">';
+                    result.data.slice(0, 20).forEach(coin => {
+                        const change = coin.price_change_percentage_24h || 0;
+                        const changeClass = change >= 0 ? 'change-up' : 'change-down';
+                        
+                        html += `
+                            <div class="crypto-card">
+                                <div class="crypto-header">
+                                    <div style="display:flex;align-items:center;">
+                                        <img src="${coin.image}" class="crypto-icon" alt="${coin.name}">
+                                        <div>
+                                            <div class="crypto-name">${coin.name}</div>
+                                            <div class="crypto-symbol">${coin.symbol.toUpperCase()}</div>
+                                        </div>
+                                    </div>
+                                    <span style="opacity:0.6">#${coin.market_cap_rank}</span>
+                                </div>
+                                <div class="crypto-price">$${coin.current_price.toLocaleString()}</div>
+                                <div class="crypto-change">
+                                    <span class="${changeClass}">${change >= 0 ? '📈' : '📉'} ${change.toFixed(2)}%</span>
+                                    <span style="opacity:0.6">Кап: $${(coin.market_cap / 1e9).toFixed(1)}B</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                container.innerHTML = '<div class="loading">❌ Ошибка загрузки</div>';
+            }
+        }
+        
+        function showPremiumLock() {
+            document.getElementById('premiumContent').innerHTML = `
+                <div class="premium-lock">
+                    <div class="lock-icon">⭐</div>
+                    <h2 style="margin-bottom:12px;">Премиум доступ</h2>
+                    <p style="margin-bottom:8px;opacity:0.8;">🔓 Топ-20 криптовалют</p>
+                    <p style="margin-bottom:8px;opacity:0.8;">📊 Рыночная капитализация</p>
+                    <p style="margin-bottom:8px;opacity:0.8;">📈 Графики и тренды</p>
+                    <p style="margin-top:16px;font-size:20px;font-weight:bold;">50 ⭐ Telegram Stars</p>
+                    <button class="buy-btn" onclick="buyPremium()">
+                        💎 Получить Premium
+                    </button>
+                </div>
+            `;
+        }
+        
+        function buyPremium() {
+            tg.showPopup({
+                title: 'Premium доступ',
+                message: 'Вы хотите приобрести Premium доступ за 50 Telegram Stars?\n\nБудут доступны:\n• Все криптовалюты\n• Расширенная аналитика\n• Рыночные данные',
+                buttons: [
+                    {id: 'buy', type: 'default', text: '💎 Купить за 50 ⭐'},
+                    {type: 'cancel', text: 'Отмена'}
+                ]
+            }, (buttonId) => {
+                if (buttonId === 'buy') {
+                    // Заглушка оплаты
+                    isPremium = true;
+                    document.getElementById('premiumBadge').textContent = '⭐ PREMIUM';
+                    document.getElementById('premiumBadge').className = 'premium-badge';
+                    loadPremiumCoins();
+                    
+                    tg.showAlert('✅ Демо-доступ активирован!\n\nВ реальном приложении здесь будет оплата через Telegram Stars API');
+                }
+            });
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            if (tab === 'free') {
+                document.getElementById('freeTab').classList.add('active');
+                document.querySelectorAll('.nav-btn')[0].classList.add('active');
+                loadFreeCoins();
+            } else {
+                document.getElementById('premiumTab').classList.add('active');
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                if (isPremium) {
+                    loadPremiumCoins();
+                } else {
+                    showPremiumLock();
+                }
+            }
+        }
+        
+        function refreshData() {
+            loadFreeCoins();
+            if (isPremium && document.getElementById('premiumTab').classList.contains('active')) {
+                loadPremiumCoins();
+            }
+        }
+        
+        // Автообновление каждые 30 секунд
+        setInterval(() => {
+            loadFreeCoins();
+        }, 30000);
+    </script>
+</body>
+</html>
