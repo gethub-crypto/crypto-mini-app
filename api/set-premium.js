@@ -2,7 +2,7 @@ const firebase = require('./firebase');
 
 module.exports = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId, premium } = req.body;
     
     if (!userId) {
       return res.json({ success: false, error: 'No userId' });
@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     
     // Сохраняем в Firebase
     await firebase.update(`users/${userId}`, {
-      premium: true,
+      premium: premium || true,
       activatedAt: Date.now()
     });
     
