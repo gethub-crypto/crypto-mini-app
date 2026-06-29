@@ -1,12 +1,11 @@
 const TelegramBot = require('node-telegram-bot-api');
+const firebase = require('./firebase');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBAPP_URL = process.env.WEBAPP_URL;
 
-// Создаем бота в режиме webhook
 let bot;
 
-// Инициализация бота
 function initBot() {
   if (!bot) {
     bot = new TelegramBot(BOT_TOKEN);
@@ -14,26 +13,12 @@ function initBot() {
   return bot;
 }
 
-// Установка webhook (нужно выполнить один раз)
-async function setWebhook(url) {
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${url}/api/bot`
-    );
-    const data = await response.json();
-    console.log('Webhook set:', data);
-    return data;
-  } catch (error) {
-    console.error('Webhook error:', error);
-  }
-}
-
 module.exports = async (req, res) => {
   try {
     const bot = initBot();
     const { body } = req;
 
-    // Обрабатываем только сообщения
+    // Обрабатываем сообщения
     if (body.message) {
       const msg = body.message;
       const chatId = msg.chat.id;
@@ -167,21 +152,14 @@ module.exports = async (req, res) => {
       const chatId = query.message.chat.id;
       
       if (query.data === 'buy_premium') {
-        await bot.sendMessage(chatId,
-          '💳 *Оплата Premium*\n\n' +
-          'Стоимость: 50 ⭐\n\n' +
-          'Для оплаты используйте Mini App:\n' +
-          '1. Откройте Mini App\n' +
-          '2. Нажмите "Купить Premium"\n' +
-          '3. Подтвердите оплату Stars\n\n' +
-          'Или используйте демо-доступ! 🎉',
-          { parse_mode: 'Markdown' }
-        );
-        
-        await bot.answerCallbackQuery(query.id, {
-          text: 'Откройте Mini App для оплаты!',
-          show_alert: true
+        // Сохраняем премиум в Firebase
+        await firebase.update(`users/${chatId}`, {
+          premium: true,
+          activatedAt: Date.now()
         });
+        
+        await bot.sendMessage(chatId, '✅ Премиум активирован! Данные сохранены в Firebase 🎉');
+        await bot.answerCallbackQuery(query.id, { text: 'Премиум активирован!' });
       }
     }
 
