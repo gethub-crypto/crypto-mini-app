@@ -1,0 +1,12 @@
+{
+  "name": "crypto-mini-app",
+  "version": "1.0.0",
+  "description": "Crypto Mini App for Telegram with Stars payments",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.64.0",
+    "axios": "^1.6.2"
+  }
+}
