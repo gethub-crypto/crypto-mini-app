@@ -251,26 +251,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .search-bar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        
-        .search-input {
-            flex: 1;
-            padding: 12px 16px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            color: white;
-            font-size: 16px;
-        }
-        
-        .search-input::placeholder {
-            color: rgba(255,255,255,0.4);
-        }
     </style>
 </head>
 <body>
@@ -314,7 +294,6 @@
         const userId = tg.initDataUnsafe?.user?.id || 'guest';
         let isPremium = false;
         
-        // Монеты
         const freeCoins = [
             { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', emoji: '₿' },
             { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', emoji: 'Ξ' },
@@ -443,23 +422,38 @@
             `;
         }
         
-        function buyPremium() {
+        async function buyPremium() {
             tg.showPopup({
                 title: 'Premium доступ',
-                message: 'Вы хотите приобрести Premium доступ за 50 Telegram Stars?\n\nБудут доступны:\n• Все криптовалюты\n• Расширенная аналитика\n• Рыночные данные',
+                message: 'Активировать Premium доступ?\n\nДемо-режим: активация бесплатно',
                 buttons: [
-                    {id: 'buy', type: 'default', text: '💎 Купить за 50 ⭐'},
+                    {id: 'buy', type: 'default', text: 'Активировать'},
                     {type: 'cancel', text: 'Отмена'}
                 ]
-            }, (buttonId) => {
+            }, async (buttonId) => {
                 if (buttonId === 'buy') {
-                    // Заглушка оплаты
-                    isPremium = true;
-                    document.getElementById('premiumBadge').textContent = '⭐ PREMIUM';
-                    document.getElementById('premiumBadge').className = 'premium-badge';
-                    loadPremiumCoins();
-                    
-                    tg.showAlert('✅ Демо-доступ активирован!\n\nВ реальном приложении здесь будет оплата через Telegram Stars API');
+                    try {
+                        // Отправляем запрос на активацию
+                        const response = await fetch('/api/set-premium', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: userId, premium: true })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            isPremium = true;
+                            document.getElementById('premiumBadge').textContent = '⭐ PREMIUM';
+                            document.getElementById('premiumBadge').className = 'premium-badge';
+                            loadPremiumCoins();
+                            tg.showAlert('✅ Premium активирован! Данные сохранены в Firebase');
+                        } else {
+                            tg.showAlert('❌ Ошибка активации');
+                        }
+                    } catch (error) {
+                        tg.showAlert('❌ Ошибка соединения');
+                    }
                 }
             });
         }
